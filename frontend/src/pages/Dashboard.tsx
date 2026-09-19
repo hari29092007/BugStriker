@@ -180,44 +180,6 @@ export const Dashboard: React.FC = () => {
                   : aptitudeProblems.map(renderCard)}
               </div>
             </section>
-
-            {/* ── CV / RESUME UPLOAD ── */}
-            <section style={{ marginTop: '56px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>📄</div>
-                <div>
-                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>CV / Resume Upload</h2>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>Submit your resume for AI-powered analysis — completes your full candidate profile</p>
-                </div>
-              </div>
-              <div style={{ height: '2px', background: 'linear-gradient(to right,rgba(16,185,129,0.5),transparent)', borderRadius: '2px', marginTop: '10px', marginBottom: '24px' }} />
-
-              {/* Single card for CV upload */}
-              <div
-                className="card"
-                style={{ maxWidth: '480px', border: '1px solid rgba(16,185,129,0.3)', boxShadow: '0 4px 20px rgba(16,185,129,0.06)', display: 'flex', flexDirection: 'column', gap: '16px' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ fontSize: '2rem' }}>📋</div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>Upload Your CV / Resume</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>PDF · DOCX · TXT &nbsp;·&nbsp; Max 5 MB</div>
-                  </div>
-                </div>
-                <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', lineHeight: '1.6', margin: 0 }}>
-                  Your resume will be reviewed alongside your coding and aptitude scores to build a comprehensive candidate profile for the evaluation team.
-                </p>
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => navigate('/cv-upload')}
-                    className="btn-primary"
-                    style={{ padding: '8px 18px', fontSize: '0.85rem', background: '#10b981', borderColor: '#10b981' }}
-                  >
-                    Go to CV Upload →
-                  </button>
-                </div>
-              </div>
-            </section>
           </>
         )}
       </main>
