@@ -135,6 +135,8 @@ export interface RecruiterRunSummary {
   code_score?: number;
   reasoning_score?: number;
   composite_score?: number;
+  cv_score?: number;
+  cumulative_score?: number;
   recommendation?: RecommendationType;
   created_at: string;
   finished_at?: string;
@@ -144,6 +146,8 @@ export interface RecruiterDossier {
   candidate_id: string;
   problem: Problem;
   run_state: RunStateResponse;
+  cv_report?: CVReport | null;
+  cumulative_score?: number | null;
 }
 
 // ── CV / Resume Types ──────────────────────────────────────────────────────

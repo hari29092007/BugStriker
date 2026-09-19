@@ -44,6 +44,8 @@ class RecruiterRunSummary(BaseModel):
     code_score: Optional[int] = None
     reasoning_score: Optional[int] = None
     composite_score: Optional[int] = None
+    cv_score: Optional[int] = None
+    cumulative_score: Optional[int] = None
     recommendation: Optional[str] = None
     created_at: str
     finished_at: Optional[str] = None

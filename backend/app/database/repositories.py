@@ -569,25 +569,32 @@ class CVRepository:
 
     def _attach_cumulative(self, record: dict) -> dict:
         """
-        Joins with the latest verdict for the candidate and computes:
-        cumulative = (test_composite * 0.6) + (cv_score * 0.4)
+        Joins with the latest verdict for the candidate/run and computes:
+        cumulative = (test_composite * 0.75) + (cv_score * 0.25)
         """
         candidate_id = record.get("candidate_id", "")
+        run_id = record.get("run_id", "")
         cv_score = record.get("cv_score") or 0
 
-        # Find latest finished run for this candidate
         test_composite = None
-        runs = sorted(
-            [r for r in _MEM_DB["student_runs"].values() if r.get("student_id") == candidate_id],
-            key=lambda r: r.get("created_at", ""),
-            reverse=True,
-        )
-        for run in runs:
-            run_id = run.get("id", "")
+        if run_id and run_id in _MEM_DB["verdicts"]:
             verdict = _MEM_DB["verdicts"].get(run_id)
             if verdict and verdict.get("composite_score") is not None:
                 test_composite = verdict["composite_score"]
-                break
+
+        if test_composite is None:
+            # Find latest finished run for this candidate
+            runs = sorted(
+                [r for r in _MEM_DB["student_runs"].values() if r.get("student_id") == candidate_id],
+                key=lambda r: r.get("created_at", ""),
+                reverse=True,
+            )
+            for run in runs:
+                r_id = run.get("id", "")
+                verdict = _MEM_DB["verdicts"].get(r_id)
+                if verdict and verdict.get("composite_score") is not None:
+                    test_composite = verdict["composite_score"]
+                    break
 
         record["test_composite_score"] = test_composite
         if test_composite is not None:
@@ -616,13 +623,30 @@ class CVRepository:
             return self._attach_cumulative(dict(rec))
         return None
 
+    def get_cv_by_run_id(self, run_id: str) -> Optional[dict]:
+        """Return CV report attached directly to a specific run."""
+        if not run_id:
+            return None
+        records = [
+            v for v in _MEM_DB["cv_submissions"].values()
+            if v.get("run_id") == run_id
+        ]
+        if records:
+            latest = max(records, key=lambda r: r.get("created_at", ""))
+            return self._attach_cumulative(dict(latest))
+        return None
+
     def get_cv_by_candidate(self, candidate_id: str) -> Optional[dict]:
         """Return the most recent CV for a candidate."""
         records = [
             v for v in _MEM_DB["cv_submissions"].values()
-            if v.get("candidate_id") == candidate_id
+            if v.get("candidate_id") == candidate_id or v.get("run_id") == candidate_id
         ]
         if not records:
+            # Fallback: if there is only 1 CV submitted in dev mode, link it
+            all_records = list(_MEM_DB["cv_submissions"].values())
+            if len(all_records) == 1:
+                return self._attach_cumulative(dict(all_records[0]))
             return None
         latest = max(records, key=lambda r: r.get("created_at", ""))
         return self._attach_cumulative(dict(latest))

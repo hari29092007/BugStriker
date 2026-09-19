@@ -152,13 +152,16 @@ export async function apiGetRecruiterDossier(runId: string): Promise<import('../
 
 // ── CV / Resume API ────────────────────────────────────────────────────────
 
-export async function apiUploadCV(file: File): Promise<{ status: string; cv_id: string; message: string }> {
+export async function apiUploadCV(file: File, runId?: string): Promise<{ status: string; cv_id: string; message: string }> {
   const headers = await getAuthHeaders();
   // Remove Content-Type so browser sets multipart boundary automatically
   delete (headers as Record<string, string>)['Content-Type'];
 
   const formData = new FormData();
   formData.append('file', file);
+  if (runId) {
+    formData.append('run_id', runId);
+  }
 
   const res = await fetch('/api/cv/upload', {
     method: 'POST',

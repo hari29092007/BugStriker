@@ -40,18 +40,22 @@ def _get_candidate_id(authorization: str = "") -> str:
     """Extract candidate ID from dev auth header or return dev default."""
     if authorization.startswith("Bearer dev-"):
         token = authorization.replace("Bearer dev-", "")
-        return f"dev-candidate-{token[:16]}" if token else "dev-candidate-default"
-    return "dev-candidate-default"
+        return token if token else "student@bugstriker.dev"
+    elif authorization.startswith("Bearer "):
+        token = authorization.replace("Bearer ", "")
+        return token if token else "student@bugstriker.dev"
+    return "student@bugstriker.dev"
 
 
 @router.post("/upload")
 async def upload_cv(
     file: UploadFile = File(...),
+    run_id: Optional[str] = Form(None),
     authorization: str = Header(default=""),
 ):
     """
     Student uploads CV/Resume. Returns submission ID immediately.
-    AI analysis runs in the background (or synchronously for simplicity).
+    AI analysis runs synchronously or fallback to heuristic.
     Student sees only: { "status": "SUBMITTED", "cv_id": "..." }
     """
     # Validate filename extension
@@ -81,6 +85,7 @@ async def upload_cv(
     pending = {
         "cv_id": cv_id,
         "candidate_id": candidate_id,
+        "run_id": run_id,
         "filename": filename,
         "file_size_bytes": len(file_bytes),
         "status": "PENDING",
@@ -89,7 +94,7 @@ async def upload_cv(
     }
     cv_repo.cv_repo_raw_save(cv_id, pending)
 
-    # Run AI analysis (async, but we await it so the report is ready)
+    # Run AI analysis
     try:
         report = await analyze_cv(
             file_bytes=file_bytes,
@@ -100,6 +105,7 @@ async def upload_cv(
         )
         report["status"] = "ANALYZED"
         report["file_size_bytes"] = len(file_bytes)
+        report["run_id"] = run_id
         cv_repo.save_cv(report)
     except Exception as e:
         print(f"CV analysis error: {e}")

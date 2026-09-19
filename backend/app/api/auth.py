@@ -39,9 +39,10 @@ async def get_current_user(
 
     # Allow dev-tokens for local testing
     if token.startswith("dev-"):
+        user_email = token[4:] if len(token) > 4 else "student@bugstriker.dev"
         return {
-            "id": "00000000-0000-0000-0000-000000000001",
-            "email": "dev@bugstriker.dev",
+            "id": user_email,
+            "email": user_email,
             "role": "authenticated",
         }
 

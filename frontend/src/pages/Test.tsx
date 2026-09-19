@@ -62,7 +62,7 @@ export const TestPage: React.FC = () => {
     setCvStatus('uploading');
     setCvError('');
     try {
-      await apiUploadCV(cvFile);
+      await apiUploadCV(cvFile, runState?.run_id);
       setCvStatus('done');
     } catch (err: any) {
       setCvError(err.message || 'Upload failed. Please try again.');
