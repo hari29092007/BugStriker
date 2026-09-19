@@ -223,3 +223,77 @@ def two_sum(nums: list[int], target: int) -> list[int]:
     assert verdict["reasoning_comparison"]["candidate_explanation"] == explanation
     assert len(verdict["reasoning_comparison"]["key_strengths"]) > 0
 
+
+def test_cv_upload_and_unified_dossier_cumulative():
+    # 1. Create and complete a run
+    student_auth = "Bearer dev-student-cv-test"
+    create_res = client.post(
+        "/api/runs/",
+        json={"problem_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"},
+        headers={"Authorization": student_auth},
+    )
+    run_id = create_res.json()["run_id"]
+
+    # Submit code and auto-pass
+    correct_code = """
+def two_sum(nums: list[int], target: int) -> list[int]:
+    lookup = {}
+    for i, n in enumerate(nums):
+        diff = target - n
+        if diff in lookup:
+            return [lookup[diff], i]
+        lookup[n] = i
+    return []
+"""
+    client.post(
+        f"/api/runs/{run_id}/submit",
+        json={"code": correct_code},
+        headers={"Authorization": student_auth},
+    )
+
+    # 2. Upload CV for this run
+    cv_content = b"""
+    Jane Developer
+    Full Stack Engineer with 4 years of experience.
+    Technical Skills: Python, FastAPI, React, PostgreSQL, Docker, AWS, Git.
+    Education: B.Tech in Computer Science from National Institute of Technology.
+    Projects: Built microservices platform and distributed cache using Redis.
+    """
+    upload_res = client.post(
+        "/api/cv/upload",
+        files={"file": ("resume.txt", cv_content, "text/plain")},
+        data={"run_id": run_id},
+        headers={"Authorization": student_auth},
+    )
+    assert upload_res.status_code == 200
+    upload_data = upload_res.json()
+    assert upload_data["status"] == "SUBMITTED"
+    assert "Your CV has been submitted" in upload_data["message"]
+
+    # 3. Verify Recruiter Runs List has CV score and 75/25 cumulative score
+    recruiter_list_res = client.get(
+        "/api/recruiter/runs",
+        headers={"Authorization": "Bearer dev-recruiter"},
+    )
+    assert recruiter_list_res.status_code == 200
+    runs = recruiter_list_res.json()
+    candidate_summary = next((r for r in runs if r["run_id"] == run_id), None)
+    assert candidate_summary is not None
+    assert candidate_summary["composite_score"] is not None
+    assert candidate_summary["cv_score"] is not None
+    expected_cumulative = int(round(candidate_summary["composite_score"] * 0.75 + candidate_summary["cv_score"] * 0.25))
+    assert candidate_summary["cumulative_score"] == expected_cumulative
+
+    # 4. Verify Unified Recruiter Dossier contains both Test details and CV details
+    dossier_res = client.get(
+        f"/api/recruiter/runs/{run_id}",
+        headers={"Authorization": "Bearer dev-recruiter"},
+    )
+    assert dossier_res.status_code == 200
+    dossier = dossier_res.json()
+    assert dossier["cumulative_score"] == expected_cumulative
+    assert dossier["cv_report"] is not None
+    assert dossier["cv_report"]["cv_score"] == candidate_summary["cv_score"]
+    assert len(dossier["cv_report"]["dimensions"]) > 0
+    assert len(dossier["cv_report"]["extracted_skills"]) > 0
+

@@ -4,11 +4,9 @@ CV Upload & Analysis API:
   GET  /api/recruiter/cv-reports — Recruiter lists all CV reports
   GET  /api/recruiter/cv-reports/{cv_id} — Full CV report
 """
-from __future__ import annotations
-
 import asyncio
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, Header
