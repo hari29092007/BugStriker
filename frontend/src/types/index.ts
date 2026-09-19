@@ -145,3 +145,52 @@ export interface RecruiterDossier {
   problem: Problem;
   run_state: RunStateResponse;
 }
+
+// ── CV / Resume Types ──────────────────────────────────────────────────────
+
+export interface CVDimensionScore {
+  name: string;
+  score: number;      // 0-100
+  weight: number;     // e.g. 0.25
+  notes: string;
+}
+
+export interface CVSubmission {
+  cv_id: string;
+  candidate_id: string;
+  filename: string;
+  file_size_bytes: number;
+  status: 'PENDING' | 'ANALYZED' | 'ERROR';
+  cv_score?: number;
+  created_at: string;
+}
+
+export interface CVReport {
+  cv_id: string;
+  candidate_id: string;
+  filename: string;
+  cv_score: number;
+  percentile: number;
+  dimensions: CVDimensionScore[];
+  strengths: string[];
+  gaps: string[];
+  recruiter_notes: string;
+  extracted_skills: string[];
+  years_of_experience?: string;
+  education_summary?: string;
+  cumulative_score?: number;
+  test_composite_score?: number;
+  created_at: string;
+}
+
+export interface CVSummary {
+  cv_id: string;
+  candidate_id: string;
+  filename: string;
+  cv_score?: number;
+  percentile?: number;
+  test_composite_score?: number;
+  cumulative_score?: number;
+  status: string;
+  created_at: string;
+}

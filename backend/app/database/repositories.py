@@ -24,6 +24,7 @@ _MEM_DB = {
     "verdicts": {},
     "problems": {},
     "test_cases": {},
+    "cv_submissions": {},
 }
 
 def _is_mock_env() -> bool:
@@ -544,3 +545,103 @@ class ProblemRepository:
     def get_visible_test_cases(self, problem_id: str) -> List[dict]:
         all_cases = self.get_test_cases(problem_id)
         return [tc for tc in all_cases if not tc.get("is_hidden")]
+
+
+# ── CV Repository ────────────────────────────────────────────────────────────
+
+class CVRepository:
+    """Stores and retrieves CV analysis reports."""
+
+    def __init__(self):
+        self.use_mock = _is_mock_env()
+
+    def _compute_percentile(self, cv_score: int) -> int:
+        """Compute percentile rank of this cv_score vs all stored CVs."""
+        all_scores = [
+            v.get("cv_score", 0)
+            for v in _MEM_DB["cv_submissions"].values()
+            if v.get("cv_score") is not None
+        ]
+        if not all_scores:
+            return 50
+        below = sum(1 for s in all_scores if s < cv_score)
+        return int((below / len(all_scores)) * 100)
+
+    def _attach_cumulative(self, record: dict) -> dict:
+        """
+        Joins with the latest verdict for the candidate and computes:
+        cumulative = (test_composite * 0.6) + (cv_score * 0.4)
+        """
+        candidate_id = record.get("candidate_id", "")
+        cv_score = record.get("cv_score") or 0
+
+        # Find latest finished run for this candidate
+        test_composite = None
+        runs = sorted(
+            [r for r in _MEM_DB["student_runs"].values() if r.get("student_id") == candidate_id],
+            key=lambda r: r.get("created_at", ""),
+            reverse=True,
+        )
+        for run in runs:
+            run_id = run.get("id", "")
+            verdict = _MEM_DB["verdicts"].get(run_id)
+            if verdict and verdict.get("composite_score") is not None:
+                test_composite = verdict["composite_score"]
+                break
+
+        record["test_composite_score"] = test_composite
+        if test_composite is not None:
+            record["cumulative_score"] = int(round(test_composite * 0.6 + cv_score * 0.4))
+        else:
+            record["cumulative_score"] = None
+        return record
+
+    def save_cv(self, report: dict) -> dict:
+        """Save a CV analysis report. Updates percentile for all stored CVs."""
+        cv_id = report["cv_id"]
+        _MEM_DB["cv_submissions"][cv_id] = report
+
+        # Recompute percentiles for all stored CVs now that we have a new data point
+        all_scores = [v.get("cv_score", 0) for v in _MEM_DB["cv_submissions"].values()]
+        for vid, rec in _MEM_DB["cv_submissions"].items():
+            score = rec.get("cv_score", 0)
+            below = sum(1 for s in all_scores if s < score)
+            rec["percentile"] = int((below / len(all_scores)) * 100) if all_scores else 50
+
+        return self._attach_cumulative(_MEM_DB["cv_submissions"][cv_id])
+
+    def get_cv(self, cv_id: str) -> Optional[dict]:
+        rec = _MEM_DB["cv_submissions"].get(cv_id)
+        if rec:
+            return self._attach_cumulative(dict(rec))
+        return None
+
+    def get_cv_by_candidate(self, candidate_id: str) -> Optional[dict]:
+        """Return the most recent CV for a candidate."""
+        records = [
+            v for v in _MEM_DB["cv_submissions"].values()
+            if v.get("candidate_id") == candidate_id
+        ]
+        if not records:
+            return None
+        latest = max(records, key=lambda r: r.get("created_at", ""))
+        return self._attach_cumulative(dict(latest))
+
+    def list_all_cvs(self) -> List[dict]:
+        return [
+            self._attach_cumulative(dict(v))
+            for v in sorted(
+                _MEM_DB["cv_submissions"].values(),
+                key=lambda r: r.get("created_at", ""),
+                reverse=True,
+            )
+        ]
+
+    def update_cv_status(self, cv_id: str, status: str) -> None:
+        if cv_id in _MEM_DB["cv_submissions"]:
+            _MEM_DB["cv_submissions"][cv_id]["status"] = status
+
+    def cv_repo_raw_save(self, cv_id: str, record: dict) -> None:
+        """Save a raw record (e.g. pending state) without analysis."""
+        _MEM_DB["cv_submissions"][cv_id] = record
+

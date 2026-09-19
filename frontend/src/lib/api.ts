@@ -149,3 +149,45 @@ export async function apiGetRecruiterDossier(runId: string): Promise<import('../
   }
   return res.json();
 }
+
+// ── CV / Resume API ────────────────────────────────────────────────────────
+
+export async function apiUploadCV(file: File): Promise<{ status: string; cv_id: string; message: string }> {
+  const headers = await getAuthHeaders();
+  // Remove Content-Type so browser sets multipart boundary automatically
+  delete (headers as Record<string, string>)['Content-Type'];
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch('/api/cv/upload', {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`CV upload failed: ${text}`);
+  }
+  return res.json();
+}
+
+export async function apiListCVReports(): Promise<import('../types').CVSummary[]> {
+  const headers = await getAuthHeaders();
+  const res = await fetch('/api/recruiter/cv-reports', { headers });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to list CV reports: ${text}`);
+  }
+  return res.json();
+}
+
+export async function apiGetCVReport(cvId: string): Promise<import('../types').CVReport> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`/api/recruiter/cv-reports/${cvId}`, { headers });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to get CV report: ${text}`);
+  }
+  return res.json();
+}

@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import auth, problems, recruiter, runs, submissions, test_sessions
+from app.api import auth, cv, problems, recruiter, runs, submissions, test_sessions
 from app.config import get_settings
 
 settings = get_settings()
@@ -40,6 +40,8 @@ app.include_router(runs.router)
 app.include_router(submissions.router)
 app.include_router(test_sessions.router)
 app.include_router(recruiter.router)
+app.include_router(cv.router)
+app.include_router(cv.recruiter_router)
 
 
 @app.get("/")

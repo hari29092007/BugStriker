@@ -9,6 +9,8 @@ import TestPage from './pages/Test';
 import ResultPage from './pages/Result';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import RecruiterCandidateDossier from './pages/RecruiterCandidateDossier';
+import CVUpload from './pages/CVUpload';
+import RecruiterCVReport from './pages/RecruiterCVReport';
 
 export const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -137,6 +139,34 @@ export const App: React.FC = () => {
               <Navigate to="/" replace />
             ) : (
               <RecruiterCandidateDossier />
+            )
+          }
+        />
+
+        {/* CV Upload — students only */}
+        <Route
+          path="/cv-upload"
+          element={
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : currentRole === 'recruiter' ? (
+              <Navigate to="/recruiter" replace />
+            ) : (
+              <CVUpload />
+            )
+          }
+        />
+
+        {/* CV Report — recruiters only */}
+        <Route
+          path="/recruiter/cv/:cvId"
+          element={
+            !isAuthenticated ? (
+              <Navigate to="/login" replace />
+            ) : currentRole !== 'recruiter' ? (
+              <Navigate to="/" replace />
+            ) : (
+              <RecruiterCVReport />
             )
           }
         />
