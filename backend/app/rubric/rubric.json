@@ -1,0 +1,43 @@
+{
+  "rubric_title": "BugStriker Recruiter Technical Assessment Rubric",
+  "weighting": {
+    "code_correctness": 0.5,
+    "debugging_reasoning": 0.5
+  },
+  "verdicts": {
+    "STRONG_HIRE": {
+      "score_range": "85-100",
+      "criteria": [
+        "All test cases pass on revision (Code Score >= 90)",
+        "Candidate explanation aligns closely with the ground-truth ideal reasoning (Reasoning Score >= 85)",
+        "Candidate accurately identifies the specific logical or algorithmic defect and explains why the fix resolves it without guessing"
+      ],
+      "recruiter_takeaway": "Exceptional problem-solving depth. Candidate understands system mechanics, not just surface-level syntax."
+    },
+    "HIRE": {
+      "score_range": "70-84",
+      "criteria": [
+        "All test cases pass on revision (Code Score >= 80)",
+        "Candidate explanation identifies the general root cause but may lack architectural precision or omit subtle edge cases (Reasoning Score >= 65)",
+        "Demonstrates solid working comprehension with minor gaps"
+      ],
+      "recruiter_takeaway": "Competent engineer who can debug and ship functional fixes with sound intuition."
+    },
+    "LEAN_NO_HIRE": {
+      "score_range": "50-69",
+      "criteria": [
+        "Revised code passes most or all tests, BUT explanation reveals significant misconceptions or cargo-cult fixes (Reasoning Score < 60)",
+        "OR Candidate has sound theoretical reasoning but failed to implement a fully working revision (Code Score < 70)"
+      ],
+      "recruiter_takeaway": "Inconsistent debugging ability. Risk of trial-and-error programming without deep comprehension."
+    },
+    "NO_HIRE": {
+      "score_range": "0-49",
+      "criteria": [
+        "Revised code still fails critical tests (Code Score < 50)",
+        "Explanation is missing, off-target, or demonstrates fundamental lack of comprehension of the failure mechanism"
+      ],
+      "recruiter_takeaway": "Did not demonstrate required debugging and code comprehension standards."
+    }
+  }
+}
