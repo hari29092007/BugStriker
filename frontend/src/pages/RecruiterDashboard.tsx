@@ -58,7 +58,7 @@ export const RecruiterDashboard: React.FC = () => {
               BUGSTRIKER <span style={{ color: '#60a5fa', fontSize: '0.85rem' }}>RECRUITER PORTAL</span>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>
-              Test Score (60%) + CV Score (40%) = Cumulative
+              Test Score (75%) + CV Score (25%) = Cumulative
             </div>
           </div>
         </div>
@@ -77,7 +77,7 @@ export const RecruiterDashboard: React.FC = () => {
               Candidate Evaluation Pipeline
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-              Complete scoring: Code Correctness (50%) + Debugging Reasoning (50%) = Test Score · CV Analysis (40%) contributes to Cumulative
+              Complete scoring: Code Correctness (50%) + Debugging Reasoning (50%) = Test Score · CV Analysis (25%) contributes to Cumulative
             </p>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -126,7 +126,7 @@ export const RecruiterDashboard: React.FC = () => {
                     const cv = cvByCandidateId[r.student_id];
                     const cvScore = cv?.cv_score;
                     const cumulative = (r.composite_score != null && cvScore != null)
-                      ? Math.round(r.composite_score * 0.6 + cvScore * 0.4)
+                      ? Math.round(r.composite_score * 0.75 + cvScore * 0.25)
                       : undefined;
                     return (
                       <tr key={r.run_id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.15s' }}

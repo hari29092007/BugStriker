@@ -591,7 +591,7 @@ class CVRepository:
 
         record["test_composite_score"] = test_composite
         if test_composite is not None:
-            record["cumulative_score"] = int(round(test_composite * 0.6 + cv_score * 0.4))
+            record["cumulative_score"] = int(round(test_composite * 0.75 + cv_score * 0.25))
         else:
             record["cumulative_score"] = None
         return record

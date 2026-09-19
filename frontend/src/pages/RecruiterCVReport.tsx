@@ -200,18 +200,18 @@ export const RecruiterCVReport: React.FC = () => {
                 <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '14px' }}>📈 Cumulative Score Breakdown</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', textAlign: 'center' }}>
                   <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', textTransform: 'uppercase', marginBottom: '4px' }}>Test Score × 60%</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)' }}>{Math.round((report.test_composite_score ?? 0) * 0.6)}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', textTransform: 'uppercase', marginBottom: '4px' }}>Test Score × 75%</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)' }}>{Math.round((report.test_composite_score ?? 0) * 0.75)}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', color: 'var(--text-subtle)' }}>+</div>
                   <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', textTransform: 'uppercase', marginBottom: '4px' }}>CV Score × 40%</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: ACCENT_CV }}>{Math.round(report.cv_score * 0.4)}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', textTransform: 'uppercase', marginBottom: '4px' }}>CV Score × 25%</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: ACCENT_CV }}>{Math.round(report.cv_score * 0.25)}</div>
                   </div>
                 </div>
                 <div style={{ borderTop: '1px solid var(--border)', marginTop: '16px', paddingTop: '14px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', textTransform: 'uppercase', marginBottom: '4px' }}>Cumulative Score</div>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#a78bfa' }}>{report.cumulative_score}<span style={{ fontSize: '1rem', color: 'var(--text-subtle)'}}>/100</span></div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', textTransform: 'uppercase', marginBottom: '4px' }}>Test×75% + CV×25%</div>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#a78bfa' }}>{report.cumulative_score}<span style={{ fontSize: '1rem', color: 'var(--text-subtle)' }}>/100</span></div>
                 </div>
               </div>
             )}
