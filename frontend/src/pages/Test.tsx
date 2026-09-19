@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { apiGetProblem } from '../lib/api';
+import { apiGetProblem, apiUploadCV } from '../lib/api';
 import { useTestSession } from '../hooks/useTestSession';
 import { useTestLock } from '../hooks/useTestLock';
 import { useRealtimeRun } from '../hooks/useRealtimeRun';
@@ -18,6 +18,9 @@ import { EvidenceChain } from '../components/EvidenceChain';
 
 import type { Problem } from '../types';
 
+const ACCENT_CV = '#10b981';
+type CVStatus = 'pending' | 'uploading' | 'done';
+
 export const TestPage: React.FC = () => {
   const { problemId } = useParams<{ problemId: string }>();
   const navigate = useNavigate();
@@ -25,6 +28,52 @@ export const TestPage: React.FC = () => {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [code, setCode] = useState<string>('');
   const [problemLoading, setProblemLoading] = useState(true);
+
+  // CV Upload state
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [cvStatus, setCvStatus] = useState<CVStatus>('pending');
+  const [cvError, setCvError] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const acceptFile = (f: File) => {
+    const name = f.name.toLowerCase();
+    const ok = name.endsWith('.pdf') || name.endsWith('.docx') || name.endsWith('.txt');
+    if (!ok) { setCvError('Only PDF, DOCX, or TXT files are accepted.'); return; }
+    if (f.size > 5 * 1024 * 1024) { setCvError('File must be under 5 MB.'); return; }
+    setCvError('');
+    setCvFile(f);
+  };
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) acceptFile(f);
+  }, []);
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) acceptFile(f);
+  };
+
+  const handleCVSubmit = async () => {
+    if (!cvFile) return;
+    setCvStatus('uploading');
+    setCvError('');
+    try {
+      await apiUploadCV(cvFile);
+      setCvStatus('done');
+    } catch (err: any) {
+      setCvError(err.message || 'Upload failed. Please try again.');
+      setCvStatus('pending');
+    }
+  };
+
+  const formatSize = (bytes: number) =>
+    bytes < 1024 * 1024
+      ? `${(bytes / 1024).toFixed(1)} KB`
+      : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
   const {
     runState,
@@ -128,6 +177,7 @@ export const TestPage: React.FC = () => {
         currentState={currentState}
         llmCallsUsed={runState?.llm_calls_used || 0}
         maxLlmCalls={5}
+        cvUploaded={cvStatus === 'done'}
       />
 
       {/* Constraint Violation Banner */}
@@ -150,66 +200,257 @@ export const TestPage: React.FC = () => {
         )}
       </div>
 
-      {/* Finished State View - Do NOT reveal result, correct, or green ticks to student */}
+      {/* Finished State View: Step 7 CV Upload -> Step 8 Final Submitted */}
       {currentState === 'FINISHED' ? (
-        <main style={{ flex: 1, padding: '48px 24px', maxWidth: '680px', width: '100%', margin: '0 auto', textAlign: 'center' }}>
-          <div
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-xl)',
-              padding: '48px 36px',
-              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.35)',
-            }}
-          >
+        <main style={{ flex: 1, padding: '48px 24px', maxWidth: '680px', width: '100%', margin: '0 auto' }}>
+          {cvStatus !== 'done' ? (
             <div
               style={{
-                width: '72px',
-                height: '72px',
-                borderRadius: '50%',
-                background: 'rgba(59, 130, 246, 0.1)',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '2rem',
-                margin: '0 auto 20px',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-xl)',
+                padding: '40px 36px',
+                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.35)',
               }}
             >
-              📝
-            </div>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.8rem',
+                    margin: '0 auto 16px',
+                  }}
+                >
+                  📄
+                </div>
+                <div style={{ marginBottom: '10px' }}>
+                  <span
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.12)',
+                      color: ACCENT_CV,
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      padding: '4px 14px',
+                      borderRadius: '9999px',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Step 7 of 8 · Mandatory
+                  </span>
+                </div>
+                <h1 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-main)' }}>
+                  Upload Your CV / Resume
+                </h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.6', maxWidth: '520px', margin: '0 auto' }}>
+                  Your code revision has been processed. To finalize and submit your test for recruiter evaluation, please upload your resume.
+                </p>
+              </div>
 
-            <div style={{ marginBottom: '14px' }}>
-              <span
+              {/* Drop Zone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={onDrop}
+                onClick={() => fileInputRef.current?.click()}
                 style={{
-                  background: 'rgba(59, 130, 246, 0.12)',
-                  color: '#60a5fa',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                  padding: '5px 16px',
-                  borderRadius: '9999px',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  letterSpacing: '0.04em',
+                  border: `2px dashed ${dragOver ? ACCENT_CV : cvFile ? ACCENT_CV + 'aa' : 'var(--border)'}`,
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '36px 20px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  background: dragOver ? 'rgba(16, 185, 129, 0.08)' : cvFile ? 'rgba(16, 185, 129, 0.04)' : 'var(--surface-card)',
+                  transition: 'all 0.2s ease',
+                  marginBottom: '18px',
                 }}
               >
-                Session Recorded
-              </span>
-            </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.txt"
+                  style={{ display: 'none' }}
+                  onChange={onFileChange}
+                />
+                {cvFile ? (
+                  <div>
+                    <div style={{ fontSize: '2.2rem', marginBottom: '8px' }}>📎</div>
+                    <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)', marginBottom: '4px' }}>
+                      {cvFile.name}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-subtle)' }}>
+                      {formatSize(cvFile.size)} · Click to change file
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ fontSize: '2.2rem', marginBottom: '8px' }}>☁️</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-main)', marginBottom: '4px' }}>
+                      Drag &amp; drop your CV here, or click to browse
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-subtle)' }}>
+                      Accepted formats: PDF, DOCX, TXT (Max 5 MB)
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '12px', color: 'var(--text-main)' }}>
-              Your response is submitted
-            </h1>
+              {cvError && (
+                <div
+                  style={{
+                    background: 'var(--error-bg)',
+                    border: '1px solid var(--error)',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    color: 'var(--error)',
+                    fontSize: '0.83rem',
+                    marginBottom: '16px',
+                  }}
+                >
+                  ⚠️ {cvError}
+                </div>
+              )}
 
-            <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.6', maxWidth: '520px', margin: '0 auto 28px' }}>
-              Your response is submitted and recorded for recruiter evaluation. All technical analysis is handled confidentially by the recruiting team.
-            </p>
+              <div
+                style={{
+                  background: 'var(--surface-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '14px 18px',
+                  marginBottom: '22px',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-muted)',
+                  lineHeight: '1.5',
+                }}
+              >
+                ℹ️ <strong style={{ color: 'var(--text-main)' }}>Cumulative Scoring:</strong> Your technical test score (75%) and CV analysis (25%) will be combined to produce the final recruiter dossier.
+              </div>
 
-            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center' }}>
-              <button onClick={() => navigate('/')} className="btn-primary" style={{ padding: '12px 28px' }}>
-                ← Return to Problem Catalog
+              <button
+                onClick={handleCVSubmit}
+                disabled={!cvFile || cvStatus === 'uploading'}
+                className="btn-primary"
+                style={{
+                  width: '100%',
+                  padding: '13px',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  background: ACCENT_CV,
+                  borderColor: ACCENT_CV,
+                  opacity: !cvFile || cvStatus === 'uploading' ? 0.5 : 1,
+                  cursor: !cvFile || cvStatus === 'uploading' ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {cvStatus === 'uploading' ? '⏳ Analyzing & Submitting CV...' : 'Submit CV & Complete Test →'}
               </button>
             </div>
-          </div>
+          ) : (
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-xl)',
+                padding: '48px 36px',
+                textAlign: 'center',
+                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.35)',
+              }}
+            >
+              <div
+                style={{
+                  width: '72px',
+                  height: '72px',
+                  borderRadius: '50%',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '2rem',
+                  margin: '0 auto 20px',
+                }}
+              >
+                📝
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <span
+                  style={{
+                    background: 'rgba(59, 130, 246, 0.12)',
+                    color: '#60a5fa',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    padding: '5px 16px',
+                    borderRadius: '9999px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  Step 8 of 8 · Completed
+                </span>
+              </div>
+
+              <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '12px', color: 'var(--text-main)' }}>
+                Your response is submitted
+              </h1>
+
+              <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.6', maxWidth: '520px', margin: '0 auto 28px' }}>
+                Your response is submitted and recorded for recruiter evaluation. All technical analysis is handled confidentially by the recruiting team.
+              </p>
+
+              <div
+                style={{
+                  background: 'var(--surface-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '16px 20px',
+                  textAlign: 'left',
+                  marginBottom: '28px',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-subtle)', marginBottom: '12px' }}>
+                  Submission Summary
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-subtle)' }}>Session ID</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-main)', marginTop: '2px' }}>
+                      {runState?.run_id ? runState.run_id.slice(0, 12) : '—'}...
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-subtle)' }}>Code Revision</div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-main)', marginTop: '2px' }}>
+                      {runState?.revision_submission ? 'Submitted' : 'Submitted'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-subtle)' }}>Diagnostic Explanation</div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-main)', marginTop: '2px' }}>
+                      {runState?.student_answer ? 'Submitted' : 'None'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-subtle)' }}>CV / Resume</div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-main)', marginTop: '2px' }}>
+                      {cvFile ? cvFile.name : 'Submitted'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '14px', justifyContent: 'center' }}>
+                <button onClick={() => navigate('/')} className="btn-primary" style={{ padding: '12px 28px' }}>
+                  ← Return to Problem Catalog
+                </button>
+              </div>
+            </div>
+          )}
         </main>
       ) : (
         /* Active Debugging Workbench Split Layout */

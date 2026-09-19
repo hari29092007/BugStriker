@@ -5,24 +5,30 @@ interface StateTrackerProps {
   currentState: RunState;
   llmCallsUsed?: number;
   maxLlmCalls?: number;
+  cvUploaded?: boolean;
 }
 
-const STEPS: { key: RunState; label: string; desc: string }[] = [
+const STEPS: { key: string; label: string; desc: string }[] = [
   { key: 'SUBMITTED', label: '1. Submitted', desc: 'Code received' },
   { key: 'RUNNING_TESTS', label: '2. Running Tests', desc: 'Executing cases' },
   { key: 'ANALYZING', label: '3. Analyzing', desc: 'Isolating failure' },
   { key: 'QUESTIONING', label: '4. Questioning', desc: 'Generating probe' },
   { key: 'WAITING_FOR_STUDENT', label: '5. Student Diagnosis', desc: 'Awaiting your answer' },
   { key: 'REVISION', label: '6. Revision', desc: 'Single fix attempt' },
-  { key: 'FINISHED', label: '7. Submitted', desc: 'Response recorded' },
+  { key: 'CV_UPLOAD', label: '7. CV Upload', desc: 'Upload resume' },
+  { key: 'FINISHED', label: '8. Submitted', desc: 'Response recorded' },
 ];
 
 export const StateTracker: React.FC<StateTrackerProps> = ({
   currentState,
   llmCallsUsed = 0,
   maxLlmCalls = 5,
+  cvUploaded = false,
 }) => {
-  const currentIdx = STEPS.findIndex((s) => s.key === currentState);
+  let currentIdx = STEPS.findIndex((s) => s.key === currentState);
+  if (currentState === 'FINISHED') {
+    currentIdx = cvUploaded ? 7 : 6;
+  }
 
   return (
     <div
@@ -47,8 +53,8 @@ export const StateTracker: React.FC<StateTrackerProps> = ({
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              background: currentState === 'FINISHED' ? 'var(--success)' : 'var(--primary)',
-              boxShadow: currentState === 'FINISHED' ? '0 0 8px var(--success)' : '0 0 8px var(--primary)',
+              background: currentState === 'FINISHED' && cvUploaded ? 'var(--success)' : 'var(--primary)',
+              boxShadow: currentState === 'FINISHED' && cvUploaded ? '0 0 8px var(--success)' : '0 0 8px var(--primary)',
             }}
           />
           <span style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: 600 }}>
