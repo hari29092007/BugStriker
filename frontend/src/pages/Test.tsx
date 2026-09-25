@@ -28,6 +28,15 @@ export const TestPage: React.FC = () => {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [code, setCode] = useState<string>('');
   const [problemLoading, setProblemLoading] = useState(true);
+  const [autoSignOutCountdown, setAutoSignOutCountdown] = useState<number>(5);
+
+  const handleCompleteAndSignOut = useCallback(() => {
+    localStorage.removeItem('bugstriker_dev_user');
+    localStorage.removeItem('bugstriker_role');
+    localStorage.removeItem('bugstriker_active_problem');
+    localStorage.removeItem('bugstriker_active_run_id');
+    window.location.href = '/login?completed=1';
+  }, []);
 
   // CV Upload state
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -75,6 +84,12 @@ export const TestPage: React.FC = () => {
       ? `${(bytes / 1024).toFixed(1)} KB`
       : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
+  const savedProblemId = typeof window !== 'undefined' ? localStorage.getItem('bugstriker_active_problem') : null;
+  const savedRunId =
+    savedProblemId === problemId
+      ? localStorage.getItem('bugstriker_active_run_id') || undefined
+      : undefined;
+
   const {
     runState,
     loading: sessionLoading,
@@ -84,16 +99,18 @@ export const TestPage: React.FC = () => {
     submitExplanation,
     submitRevision,
     refreshState,
-  } = useTestSession(problemId || '');
+  } = useTestSession(problemId || '', savedRunId);
 
   const { isLocked, lockReason } = useTestLock(runState?.state);
 
   // Subscribe to Supabase Realtime updates
   useRealtimeRun(runState?.run_id, refreshState);
 
-  // Load problem details
+  // Load problem details & manage active session
   useEffect(() => {
     if (!problemId) return;
+
+    localStorage.setItem('bugstriker_active_problem', problemId);
 
     setProblemLoading(true);
     apiGetProblem(problemId)
@@ -104,9 +121,67 @@ export const TestPage: React.FC = () => {
       .catch((err) => console.error('Failed to load problem:', err))
       .finally(() => setProblemLoading(false));
 
-    // Initialize run session
-    startNewRun();
+    // Initialize run session if not already existing for this problem
+    const existingRunId = localStorage.getItem('bugstriker_active_run_id');
+    const existingProblemId = localStorage.getItem('bugstriker_active_problem');
+    if (!existingRunId || existingProblemId !== problemId) {
+      startNewRun();
+    }
   }, [problemId]);
+
+  // Sync active run ID and clear when finished
+  useEffect(() => {
+    if (runState?.run_id) {
+      localStorage.setItem('bugstriker_active_run_id', runState.run_id);
+    }
+    if (runState?.state === 'FINISHED') {
+      localStorage.removeItem('bugstriker_active_problem');
+      localStorage.removeItem('bugstriker_active_run_id');
+    }
+  }, [runState?.run_id, runState?.state]);
+
+  // Lock candidate on test page during execution (prevent popstate / back button)
+  useEffect(() => {
+    if (!problemId) return;
+
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+      alert('Assessment in progress: You cannot return to the catalog during an active assessment session.');
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (runState?.state !== 'FINISHED') {
+        e.preventDefault();
+        e.returnValue = 'Assessment in progress: Leaving will abandon your evaluation.';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [problemId, runState?.state]);
+
+  useEffect(() => {
+    if (runState?.state === 'FINISHED') {
+      const timer = setInterval(() => {
+        setAutoSignOutCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            handleCompleteAndSignOut();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [runState?.state, handleCompleteAndSignOut]);
 
   if (problemLoading || !problem) {
     return (
@@ -137,13 +212,25 @@ export const TestPage: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button
-            onClick={() => navigate('/')}
-            className="btn-secondary"
-            style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+          {/* Assessment Locked Indicator (Candidate cannot return to catalog mid-test) */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              fontSize: '0.8rem',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '6px',
+              color: '#f87171',
+              fontWeight: 600,
+              userSelect: 'none',
+            }}
           >
-            ← Catalog
-          </button>
+            <span>🔒</span>
+            <span>Assessment In Progress</span>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{problem.title}</h2>
             <span
@@ -444,9 +531,18 @@ export const TestPage: React.FC = () => {
                 </div>
               </div>
 
+              <div style={{ margin: '22px 0 16px', padding: '16px 20px', borderRadius: 'var(--radius-md)', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#10b981', marginBottom: '6px' }}>
+                  🎉 Assessment & Tasks Completed!
+                </div>
+                <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+                  You will be automatically signed out in <strong style={{ color: '#10b981', fontSize: '1.05rem' }}>{autoSignOutCountdown}s</strong>...
+                </div>
+              </div>
+
               <div style={{ display: 'flex', gap: '14px', justifyContent: 'center' }}>
-                <button onClick={() => navigate('/')} className="btn-primary" style={{ padding: '12px 28px' }}>
-                  ← Return to Problem Catalog
+                <button onClick={handleCompleteAndSignOut} className="btn-primary" style={{ padding: '12px 28px', background: '#10b981', borderColor: '#10b981' }}>
+                  Sign Out Now ➔
                 </button>
               </div>
             </div>

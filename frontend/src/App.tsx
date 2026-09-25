@@ -87,6 +87,8 @@ export const App: React.FC = () => {
               <Navigate to="/login" replace />
             ) : currentRole === 'recruiter' ? (
               <Navigate to="/recruiter" replace />
+            ) : localStorage.getItem('bugstriker_active_problem') ? (
+              <Navigate to={`/problem/${localStorage.getItem('bugstriker_active_problem')}`} replace />
             ) : (
               <Dashboard />
             )

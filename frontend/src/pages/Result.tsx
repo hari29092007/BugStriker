@@ -23,17 +23,39 @@ export const ResultPage: React.FC = () => {
 
   useEffect(() => {
     if (!runId) return;
+    localStorage.removeItem('bugstriker_active_problem');
+    localStorage.removeItem('bugstriker_active_run_id');
     apiGetRun(runId)
-      .then((data) => setRunState(data))
+      .then((state) => setRunState(state))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [runId]);
 
+  const [autoSignOutCountdown, setAutoSignOutCountdown] = useState<number>(5);
+
   const handleSignOut = () => {
     localStorage.removeItem('bugstriker_dev_user');
     localStorage.removeItem('bugstriker_role');
-    window.location.href = '/login';
+    localStorage.removeItem('bugstriker_active_problem');
+    localStorage.removeItem('bugstriker_active_run_id');
+    window.location.href = '/login?completed=1';
   };
+
+  useEffect(() => {
+    if (cvStatus === 'done') {
+      const timer = setInterval(() => {
+        setAutoSignOutCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            handleSignOut();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [cvStatus]);
 
   const acceptFile = (f: File) => {
     const name = f.name.toLowerCase();
@@ -86,8 +108,11 @@ export const ResultPage: React.FC = () => {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 24px', textAlign: 'center' }}>
         <h2 style={{ color: 'var(--error)', marginBottom: '12px' }}>Could not load submission</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>{error || 'Run not found'}</p>
-        <button onClick={() => navigate('/')} className="btn-secondary">Return to Problem Catalog</button>
+        <button onClick={() => {
+          localStorage.removeItem('bugstriker_active_problem');
+          localStorage.removeItem('bugstriker_active_run_id');
+          navigate('/');
+        }} className="btn-secondary">Return to Problem Catalog</button>
       </div>
     );
   }
@@ -170,8 +195,16 @@ export const ResultPage: React.FC = () => {
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.7', marginBottom: '28px', maxWidth: '420px', margin: '0 auto 24px' }}>
               Your CV has been submitted. Your full assessment — coding, reasoning, and resume — has been recorded and will be reviewed by the evaluation team.
             </p>
-            <button onClick={() => navigate('/')} className="btn-primary" style={{ padding: '12px 32px' }}>
-              ← Return to Dashboard
+            <div style={{ margin: '20px 0 16px', padding: '14px 18px', borderRadius: 'var(--radius-md)', background: `${ACCENT_CV}15`, border: `1px solid ${ACCENT_CV}44` }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: ACCENT_CV, marginBottom: '4px' }}>
+                🎉 Assessment & Tasks Completed!
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                You will be automatically signed out in <strong style={{ color: ACCENT_CV, fontSize: '1rem' }}>{autoSignOutCountdown}s</strong>...
+              </div>
+            </div>
+            <button onClick={handleSignOut} className="btn-primary" style={{ padding: '12px 32px', background: ACCENT_CV, borderColor: ACCENT_CV }}>
+              Sign Out Now ➔
             </button>
           </div>
         ) : (

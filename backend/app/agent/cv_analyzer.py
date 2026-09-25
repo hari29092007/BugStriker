@@ -225,8 +225,9 @@ def _heuristic_analyze(text: str, filename: str, candidate_id: str, cv_id: str, 
 
 async def _llm_analyze(text: str, filename: str, candidate_id: str, cv_id: str, created_at: str, settings) -> Optional[dict]:
     try:
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=settings.openai_api_key)
+        from app.core.llm import get_llm_client, get_llm_model
+        client = get_llm_client()
+        model = get_llm_model()
 
         # Truncate very long CVs to ~4000 chars to stay within token budget
         cv_text = text[:4000] if len(text) > 4000 else text
@@ -270,7 +271,7 @@ Return ONLY valid JSON:
 }}"""
 
         response = await client.chat.completions.create(
-            model=settings.openai_model,
+            model=model,
             messages=[
                 {"role": "system", "content": "You are BugStriker's CV analysis engine. Output valid JSON only."},
                 {"role": "user", "content": prompt},

@@ -28,6 +28,8 @@ from app.database.repositories import (
 )
 from app.execution.sandbox import execute_code
 from app.models.test_result import ExecutionEvidence
+from app.config import get_settings
+from app.core.network import ensure_network_connected, NetworkDisconnectedError
 
 
 class RunOrchestrator:
@@ -65,6 +67,9 @@ class RunOrchestrator:
         Flow:
         SUBMITTED -> RUNNING_TESTS -> ANALYZING -> (QUESTIONING / FINISHED)
         """
+        if get_settings().require_network:
+            ensure_network_connected()
+
         run = self.run_repo.get_run(run_id)
         if not run:
             raise ValueError(f"Run {run_id} not found")
@@ -186,6 +191,9 @@ class RunOrchestrator:
         Student submits explanation while in WAITING_FOR_STUDENT state.
         Transition: WAITING_FOR_STUDENT -> REVISION
         """
+        if get_settings().require_network:
+            ensure_network_connected()
+
         run = self.run_repo.get_run(run_id)
         if not run:
             raise ValueError(f"Run {run_id} not found")
@@ -222,6 +230,9 @@ class RunOrchestrator:
         Student submits revised code.
         Transition: REVISION -> RUNNING_TESTS -> ANALYZING -> FINISHED
         """
+        if get_settings().require_network:
+            ensure_network_connected()
+
         run = self.run_repo.get_run(run_id)
         if not run:
             raise ValueError(f"Run {run_id} not found")

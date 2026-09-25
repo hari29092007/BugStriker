@@ -40,6 +40,7 @@ FINISHED
 - Maximum **1** code revision
 - Maximum **2** code executions per evaluation cycle
 - Maximum **5** LLM calls per run
+- Active network connection strictly enforced (`REQUIRE_NETWORK=true`; agent halts and blocks execution if offline)
 - Failed revision terminates in `NOT_VERIFIED` (no infinite loops)
 
 ---
@@ -70,29 +71,28 @@ In your Supabase project SQL Editor, run:
 2. `supabase/seed.sql` (Seeds Two Sum and FizzBuzz challenges).
 
 ### 3. Run the Application
-You can run the launcher script:
+
+**On Windows (PowerShell / CMD):**
+```powershell
+# From the bugstriker directory:
+.\run.ps1
+```
+Or double-click `run.bat`.
+
+Alternatively, run manually:
+```bash
+cd backend
+python -m uvicorn app.main:app --reload --port 8000
+```
+This serves the complete application (Web UI + API) at: **http://localhost:8000**
+
+*(Optional frontend dev server if Node.js is installed: `cd frontend && npm run dev` at **http://localhost:5173**)*
+
+**On Linux / macOS:**
 ```bash
 chmod +x run.sh
 ./run.sh
 ```
-
-Or run services manually:
-
-**Backend:**
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Visit: **http://localhost:5173**
 
 ---
 

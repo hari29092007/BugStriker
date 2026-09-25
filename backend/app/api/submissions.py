@@ -10,6 +10,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.agent.orchestrator import RunOrchestrator
 from app.agent.state_machine import InvalidTransitionError
+from app.core.network import NetworkDisconnectedError
 from app.api.auth import get_current_user
 from app.database.repositories import (
     AnswerRepository,
@@ -59,6 +60,8 @@ async def submit_initial_code(
             student_id=user["id"],
         )
         return updated_state
+    except NetworkDisconnectedError as nde:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(nde))
     except InvalidTransitionError as ite:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(ite))
     except ValueError as ve:
@@ -94,6 +97,8 @@ async def submit_student_explanation(
             student_id=user["id"],
         )
         return updated_state
+    except NetworkDisconnectedError as nde:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(nde))
     except InvalidTransitionError as ite:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(ite))
     except ValueError as ve:
@@ -129,6 +134,8 @@ async def submit_revised_code(
             student_id=user["id"],
         )
         return updated_state
+    except NetworkDisconnectedError as nde:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(nde))
     except InvalidTransitionError as ite:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(ite))
     except ValueError as ve:

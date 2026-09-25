@@ -87,6 +87,8 @@ export const Login: React.FC = () => {
     window.location.href = '/recruiter';
   };
 
+  const isCompleted = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('completed') === '1';
+
   return (
     <div
       style={{
@@ -100,8 +102,36 @@ export const Login: React.FC = () => {
         position: 'relative',
       }}
     >
+      {isCompleted && (
+        <div
+          style={{
+            maxWidth: '680px',
+            width: '100%',
+            marginBottom: '24px',
+            padding: '16px 22px',
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            borderRadius: 'var(--radius-lg)',
+            color: '#10b981',
+            fontSize: '0.92rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            boxShadow: '0 4px 20px rgba(16, 185, 129, 0.1)',
+            zIndex: 2,
+          }}
+        >
+          <span style={{ fontSize: '1.4rem' }}>✅</span>
+          <span>
+            <strong>Assessment Completed!</strong> You have been automatically and securely signed out.
+          </span>
+        </div>
+      )}
+
       {/* Brand Header */}
       <div style={{ textAlign: 'center', marginBottom: '36px', zIndex: 1 }}>
+
         <div
           style={{
             display: 'inline-flex',

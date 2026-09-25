@@ -12,6 +12,9 @@ from app.api.auth import get_current_user
 from app.database.repositories import ProblemRepository, RunRepository
 from app.models.submission import CreateRunRequest, RunStateResponse
 
+from app.config import get_settings
+from app.core.network import ensure_network_connected, NetworkDisconnectedError
+
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 
 
@@ -21,6 +24,16 @@ async def create_run(req: CreateRunRequest, user=Depends(get_current_user)):
     """
     Create a new student evaluation cycle run for a problem.
     """
+    settings = get_settings()
+    if settings.require_network:
+        try:
+            ensure_network_connected()
+        except NetworkDisconnectedError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(exc),
+            )
+
     problem_repo = ProblemRepository()
     problem = problem_repo.get_problem(str(req.problem_id))
     if not problem:
@@ -33,6 +46,7 @@ async def create_run(req: CreateRunRequest, user=Depends(get_current_user)):
     student_id = user["id"]
     run = run_repo.create_run(student_id=student_id, problem_id=str(req.problem_id))
     return {"run_id": run["id"], "state": run["state"]}
+
 
 
 @router.get("/{run_id}", response_model=RunStateResponse)

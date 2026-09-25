@@ -12,6 +12,13 @@ export const Dashboard: React.FC = () => {
   const [userEmail, setUserEmail] = useState<string>('student@bugstriker.dev');
 
   useEffect(() => {
+    // If an assessment is in progress, lock candidate out of the catalog
+    const activeProblem = localStorage.getItem('bugstriker_active_problem');
+    if (activeProblem) {
+      navigate(`/problem/${activeProblem}`, { replace: true });
+      return;
+    }
+
     if (isSupabaseConfigured()) {
       supabase.auth.getUser().then(({ data }) => {
         if (data.user?.email) setUserEmail(data.user.email);
@@ -25,7 +32,7 @@ export const Dashboard: React.FC = () => {
       .then((data) => setProblems(data))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [navigate]);
 
   const handleSignOut = async () => {
     if (isSupabaseConfigured()) {
@@ -33,6 +40,8 @@ export const Dashboard: React.FC = () => {
     }
     localStorage.removeItem('bugstriker_dev_user');
     localStorage.removeItem('bugstriker_role');
+    localStorage.removeItem('bugstriker_active_problem');
+    localStorage.removeItem('bugstriker_active_run_id');
     window.location.href = '/login';
   };
 
@@ -89,7 +98,10 @@ export const Dashboard: React.FC = () => {
             {prob.function_signature}()
           </span>
           <button
-            onClick={() => navigate(`/problem/${prob.id}`)}
+            onClick={() => {
+              localStorage.setItem('bugstriker_active_problem', prob.id);
+              navigate(`/problem/${prob.id}`);
+            }}
             className="btn-primary"
             style={{ padding: '8px 16px', fontSize: '0.85rem' }}
           >

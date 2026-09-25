@@ -400,9 +400,11 @@ Return valid JSON with this exact schema:
 """
 
     try:
-        client = AsyncOpenAI(api_key=settings.openai_api_key)
+        from app.core.llm import get_llm_client, get_llm_model
+        client = get_llm_client()
+        model = get_llm_model()
         response = await client.chat.completions.create(
-            model=settings.openai_model,
+            model=model,
             messages=[
                 {
                     "role": "system",

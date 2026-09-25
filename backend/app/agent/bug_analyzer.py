@@ -312,7 +312,7 @@ def _heuristic_analyze(problem: dict, code: str, evidence: ExecutionEvidence) ->
 
 async def _llm_analyze(problem: dict, code: str, evidence: ExecutionEvidence, settings) -> Optional[BugReport]:
     """Full GPT-powered deep analysis. Returns None if the LLM call fails."""
-    from openai import AsyncOpenAI  # late import to avoid issues in non-LLM paths
+    from app.core.llm import get_llm_client, get_llm_model
 
     failing_tests = [t for t in evidence.test_results if not t.passed]
     failing_info = [
@@ -368,9 +368,10 @@ Return ONLY valid JSON with this exact schema:
 }}"""
 
     try:
-        client = AsyncOpenAI(api_key=settings.openai_api_key)
+        client = get_llm_client()
+        model = get_llm_model()
         response = await client.chat.completions.create(
-            model=settings.openai_model,
+            model=model,
             messages=[
                 {
                     "role": "system",

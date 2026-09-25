@@ -32,6 +32,10 @@ export function useTestSession(problemId: string, initialRunId?: string) {
     setError(null);
     try {
       const { run_id } = await apiCreateRun(problemId);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bugstriker_active_problem', problemId);
+        localStorage.setItem('bugstriker_active_run_id', run_id);
+      }
       const state = await apiGetRun(run_id);
       setRunState(state);
       return state;
